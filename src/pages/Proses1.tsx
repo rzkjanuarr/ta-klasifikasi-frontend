@@ -12,7 +12,7 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer, 
-  Cell,
+  Legend,
   LabelList
 } from 'recharts';
 import { confusionMatrixService } from "@/services/confusion-matrix.service";
@@ -30,9 +30,6 @@ const SEABORN_COLORS = {
   cyan: "#64B5CD",
   orange: "#E18727",
 };
-
-// Type for numeric metrics only
-type NumericMetricKey = "accuracy_count" | "precision_count" | "recall_count" | "f1_score_count";
 
 export default function Proses1Page() {
   const [data, setData] = useState<ConfusionMatrixData | null>(null);
