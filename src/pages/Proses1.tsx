@@ -5,15 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
+  PieChart,
+  Pie,
   Tooltip, 
   ResponsiveContainer, 
   Legend,
-  LabelList
+  Cell
 } from 'recharts';
 import { confusionMatrixService } from "@/services/confusion-matrix.service";
 import { ApiError } from "@/services/api-client";
@@ -30,6 +27,9 @@ const SEABORN_COLORS = {
   cyan: "#64B5CD",
   orange: "#E18727",
 };
+
+// Type for numeric metrics only
+type NumericMetricKey = "accuracy_count" | "precision_count" | "recall_count" | "f1_score_count";
 
 export default function Proses1Page() {
   const [data, setData] = useState<ConfusionMatrixData | null>(null);
@@ -99,31 +99,101 @@ export default function Proses1Page() {
     return (value * 100).toFixed(1) + "%";
   };
 
-  // Prepare combined chart data
-  const getCombinedChartData = () => {
+  // Prepare confusion matrix pie data (matplotlib-like)
+  const getConfusionPieData = () => {
+    if (!data) return [];
+
     return [
       {
-        metric: "Accuracy",
-        Legal: legalData?.accuracy_count || 0,
-        Illegal: illegalData?.accuracy_count || 0,
+        name: "True Positive",
+        value: data.tp_count,
+        color: SEABORN_COLORS.green,
       },
       {
-        metric: "Precision",
-        Legal: legalData?.precision_count || 0,
-        Illegal: illegalData?.precision_count || 0,
+        name: "True Negative",
+        value: data.tn_count,
+        color: SEABORN_COLORS.blue,
       },
       {
-        metric: "Recall",
-        Legal: legalData?.recall_count || 0,
-        Illegal: illegalData?.recall_count || 0,
+        name: "False Positive",
+        value: data.fp_count,
+        color: SEABORN_COLORS.orange,
       },
       {
-        metric: "F1-Score",
-        Legal: legalData?.f1_score_count || 0,
-        Illegal: illegalData?.f1_score_count || 0,
+        name: "False Negative",
+        value: data.fn_count,
+        color: SEABORN_COLORS.red,
       },
     ];
   };
+
+  // Prepare chart data for each individual metric
+  const getIndividualChartData = (metricKey: NumericMetricKey) => {
+    return [
+      {
+        name: "Legal",
+        value: legalData ? (legalData[metricKey] as number) : 0,
+        color: SEABORN_COLORS.blue
+      },
+      {
+        name: "Illegal",
+        value: illegalData ? (illegalData[metricKey] as number) : 0,
+        color: SEABORN_COLORS.red
+      }
+    ];
+  };
+
+  const renderPieLabel = ({ percent }: { percent?: number }) => {
+    if (!percent || percent < 0.04) return "";
+    return `${(percent * 100).toFixed(1)}%`;
+  };
+
+  const renderMetricChart = (title: string, metricKey: NumericMetricKey, color: string) => (
+    <Card className="bg-slate-900 border-slate-800">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-white text-lg flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></div>
+          {title}
+        </CardTitle>
+        <CardDescription>Legal vs Illegal Comparison</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[200px] w-full mt-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#0f172a', 
+                  border: '1px solid #334155',
+                  borderRadius: '8px',
+                  color: '#f8fafc'
+                }}
+                formatter={(value: any, name: any) => [formatPercent(value as number), `${name}`]}
+              />
+              <Legend wrapperStyle={{ color: "#cbd5e1", fontSize: "12px" }} />
+              <Pie
+                data={getIndividualChartData(metricKey)}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={35}
+                outerRadius={75}
+                startAngle={90}
+                endAngle={-270}
+                labelLine={false}
+                label={renderPieLabel}
+              >
+                {getIndividualChartData(metricKey).map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <main className="min-h-screen bg-slate-950">
@@ -146,7 +216,7 @@ export default function Proses1Page() {
           </h1>
           <p className="text-lg text-slate-300 max-w-2xl drop-shadow-md">
             Proses 1 - Analisis performa model klasifikasi dengan confusion matrix.
-            Evaluasi metrik secara komprehensif dalam satu visualisasi terpadu.
+            Evaluasi metrik secara komprehensif dengan visualisasi terpadu dan granular.
           </p>
         </div>
       </div>
@@ -176,6 +246,11 @@ export default function Proses1Page() {
         {loading ? (
           <div className="space-y-8">
             <Skeleton className="h-[450px] w-full bg-slate-900" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-[250px] w-full bg-slate-900" />
+              ))}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               {Array.from({ length: 6 }).map((_, index) => (
                 <Card key={index} className="bg-slate-900 border-slate-800">
@@ -193,84 +268,76 @@ export default function Proses1Page() {
           </div>
         ) : data ? (
           <>
-            {/* Visual Combined Chart - NEW */}
+            {/* Visual Combined Chart - UNIFIED */}
             <div className="mb-12">
               <h2 className="text-3xl font-bold text-white mb-8 text-center flex items-center justify-center gap-3">
-                <span className="text-blue-500">📊</span> Perbandingan Metrik Evaluasi (Seaborn Style)
+                <span className="text-blue-500">📊</span> Perbandingan Metrik Terpadu
               </h2>
               
               <Card className="bg-slate-900 border-slate-800">
                 <CardHeader>
-                  <CardTitle className="text-white text-xl">Combined Metrics Comparison</CardTitle>
-                  <CardDescription>Comparison of Accuracy, Precision, Recall, and F1-Score between Legal and Illegal classes</CardDescription>
+                  <CardTitle className="text-white text-xl">Distribusi Confusion Matrix</CardTitle>
+                  <CardDescription>Proporsi TP, TN, FP, dan FN pada data {data.keterangan_legal}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[450px] w-full mt-4">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={getCombinedChartData()}
-                        margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                        <XAxis 
-                          dataKey="metric" 
-                          axisLine={{ stroke: '#475569' }}
-                          tickLine={false}
-                          tick={{ fill: '#94a3b8', fontSize: 13, fontWeight: 'bold' }}
-                        />
-                        <YAxis 
-                          domain={[0, 1]}
-                          axisLine={{ stroke: '#475569' }}
-                          tickLine={false}
-                          tick={{ fill: '#94a3b8', fontSize: 12 }}
-                          tickFormatter={(val) => `${(val * 100).toFixed(0)}%`}
-                        />
+                      <PieChart>
                         <Tooltip 
-                          cursor={{ fill: '#1e293b', opacity: 0.4 }}
                           contentStyle={{ 
                             backgroundColor: '#0f172a', 
                             border: '1px solid #334155',
                             borderRadius: '8px',
                             color: '#f8fafc'
                           }}
-                          formatter={(value: any) => [formatPercent(value as number), 'Value']}
+                          formatter={(value: any, name: any) => {
+                            const total = data.ts_count || 1;
+                            const count = value as number;
+                            return [`${count.toLocaleString()} (${((count / total) * 100).toFixed(1)}%)`, name];
+                          }}
                         />
                         <Legend 
                           verticalAlign="top" 
                           align="right" 
                           wrapperStyle={{ paddingBottom: '20px' }}
                         />
-                        <Bar 
-                          dataKey="Legal" 
-                          fill={SEABORN_COLORS.blue} 
-                          radius={[4, 4, 0, 0]} 
-                          name="Legal Class"
+                        <Pie
+                          data={getConfusionPieData()}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="52%"
+                          innerRadius={70}
+                          outerRadius={150}
+                          startAngle={90}
+                          endAngle={-270}
+                          labelLine={false}
+                          label={({ name, percent }) =>
+                            percent && percent > 0.03 ? `${name}: ${(percent * 100).toFixed(1)}%` : ""
+                          }
                         >
-                          <LabelList 
-                            dataKey="Legal" 
-                            position="top" 
-                            formatter={(val: any) => formatPercent(val as number)}
-                            style={{ fill: SEABORN_COLORS.blue, fontSize: 11, fontWeight: 'bold' }}
-                          />
-                        </Bar>
-                        <Bar 
-                          dataKey="Illegal" 
-                          fill={SEABORN_COLORS.red} 
-                          radius={[4, 4, 0, 0]} 
-                          name="Illegal Class"
-                        >
-                          <LabelList 
-                            dataKey="Illegal" 
-                            position="top" 
-                            formatter={(val: any) => formatPercent(val as number)}
-                            style={{ fill: SEABORN_COLORS.red, fontSize: 11, fontWeight: 'bold' }}
-                          />
-                        </Bar>
-                      </BarChart>
+                          {getConfusionPieData().map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Visual Individual Charts - GRANULAR */}
+            <div className="mb-12">
+              <h2 className="text-2xl font-bold text-white mb-6 text-center flex items-center justify-center gap-3">
+                <span className="text-orange-400">📈</span> Analisis Metrik Individual
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {renderMetricChart("Accuracy", "accuracy_count", SEABORN_COLORS.green)}
+                {renderMetricChart("Precision", "precision_count", SEABORN_COLORS.blue)}
+                {renderMetricChart("Recall", "recall_count", SEABORN_COLORS.purple)}
+                {renderMetricChart("F1-Score", "f1_score_count", SEABORN_COLORS.orange)}
+              </div>
             </div>
 
             {/* Detailed Explanation Section - DYNAMIC */}
