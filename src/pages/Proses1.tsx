@@ -281,65 +281,7 @@ export default function Proses1Page() {
         ) : data ? (
           <>
             {/* Visual Combined Chart - UNIFIED */}
-            <div className="mb-12">
-              <h2 className="text-3xl font-bold text-white mb-8 text-center flex items-center justify-center gap-3">
-                <span className="text-blue-500">📊</span> Perbandingan Metrik Terpadu
-              </h2>
-              
-              <Card className="bg-slate-900 border-slate-800">
-                <CardHeader>
-                  <CardTitle className="text-white text-xl">Distribusi Confusion Matrix</CardTitle>
-                  <CardDescription>Proporsi TP, TN, FP, dan FN pada data {data.keterangan_legal}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[450px] w-full mt-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: '#0f172a', 
-                            border: '1px solid #334155',
-                            borderRadius: '8px',
-                            color: '#f8fafc'
-                          }}
-                          itemStyle={{ color: '#f8fafc' }}
-                          labelStyle={{ color: '#cbd5e1' }}
-                          formatter={(value: any, name: any) => {
-                            const total = data.ts_count || 1;
-                            const count = value as number;
-                            return [`${count.toLocaleString()} (${((count / total) * 100).toFixed(1)}%)`, name];
-                          }}
-                        />
-                        <Legend 
-                          verticalAlign="top" 
-                          align="right" 
-                          wrapperStyle={{ paddingBottom: '20px' }}
-                        />
-                        <Pie
-                          data={getConfusionPieData()}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="52%"
-                          innerRadius={70}
-                          outerRadius={150}
-                          startAngle={90}
-                          endAngle={-270}
-                          labelLine={false}
-                          label={({ name, percent }) =>
-                            percent && percent > 0.03 ? `${name}: ${(percent * 100).toFixed(1)}%` : ""
-                          }
-                        >
-                          {getConfusionPieData().map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            
 
             {/* Visual Individual Charts - GRANULAR */}
             <div className="mb-12">
@@ -732,6 +674,66 @@ export default function Proses1Page() {
                   <p className="text-xs text-slate-400">
                     {data.recall_penjelasan}
                   </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="mb-12">
+              <h2 className="text-3xl font-bold text-white mb-8 text-center flex items-center justify-center gap-3">
+                <span className="text-blue-500">📊</span> Perbandingan Metrik Terpadu
+              </h2>
+              
+              <Card className="bg-slate-900 border-slate-800">
+                <CardHeader>
+                  <CardTitle className="text-white text-xl">Distribusi Confusion Matrix</CardTitle>
+                  <CardDescription>Proporsi TP, TN, FP, dan FN pada data {data.keterangan_legal}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[450px] w-full mt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#0f172a', 
+                            border: '1px solid #334155',
+                            borderRadius: '8px',
+                            color: '#f8fafc'
+                          }}
+                          itemStyle={{ color: '#f8fafc' }}
+                          labelStyle={{ color: '#cbd5e1' }}
+                          formatter={(value: any, name: any) => {
+                            const total = data.ts_count || 1;
+                            const count = value as number;
+                            return [`${count.toLocaleString()} (${((count / total) * 100).toFixed(1)}%)`, name];
+                          }}
+                        />
+                        <Legend 
+                          verticalAlign="top" 
+                          align="right" 
+                          wrapperStyle={{ paddingBottom: '20px' }}
+                        />
+                        <Pie
+                          data={getConfusionPieData()}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="52%"
+                          innerRadius={70}
+                          outerRadius={150}
+                          startAngle={90}
+                          endAngle={-270}
+                          labelLine={false}
+                          label={({ name, percent }) =>
+                            percent && percent > 0.03 ? `${name}: ${(percent * 100).toFixed(1)}%` : ""
+                          }
+                        >
+                          {getConfusionPieData().map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 </CardContent>
               </Card>
             </div>
