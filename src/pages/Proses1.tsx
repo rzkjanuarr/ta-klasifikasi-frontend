@@ -102,80 +102,31 @@ export default function Proses1Page() {
     return (value * 100).toFixed(1) + "%";
   };
 
-  // Prepare chart data for each metric
-  const getChartData = (metricKey: NumericMetricKey) => {
+  // Prepare combined chart data
+  const getCombinedChartData = () => {
     return [
       {
-        name: "Legal",
-        value: legalData ? (legalData[metricKey] as number) : 0,
-        color: SEABORN_COLORS.blue
+        metric: "Accuracy",
+        Legal: legalData?.accuracy_count || 0,
+        Illegal: illegalData?.accuracy_count || 0,
       },
       {
-        name: "Illegal",
-        value: illegalData ? (illegalData[metricKey] as number) : 0,
-        color: SEABORN_COLORS.red
-      }
+        metric: "Precision",
+        Legal: legalData?.precision_count || 0,
+        Illegal: illegalData?.precision_count || 0,
+      },
+      {
+        metric: "Recall",
+        Legal: legalData?.recall_count || 0,
+        Illegal: illegalData?.recall_count || 0,
+      },
+      {
+        metric: "F1-Score",
+        Legal: legalData?.f1_score_count || 0,
+        Illegal: illegalData?.f1_score_count || 0,
+      },
     ];
   };
-
-  const renderMetricChart = (title: string, metricKey: NumericMetricKey, color: string) => (
-    <Card className="bg-slate-900 border-slate-800">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-white text-lg flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></div>
-          {title}
-        </CardTitle>
-        <CardDescription>Comparison across classes</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="h-[250px] w-full mt-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={getChartData(metricKey)}
-              margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-              barSize={60}
-            >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-              <XAxis 
-                dataKey="name" 
-                axisLine={{ stroke: '#475569' }}
-                tickLine={false}
-                tick={{ fill: '#94a3b8', fontSize: 12 }}
-              />
-              <YAxis 
-                domain={[0, 1]}
-                axisLine={{ stroke: '#475569' }}
-                tickLine={false}
-                tick={{ fill: '#94a3b8', fontSize: 12 }}
-                tickFormatter={(val) => `${(val * 100).toFixed(0)}%`}
-              />
-              <Tooltip 
-                cursor={{ fill: '#1e293b', opacity: 0.4 }}
-                contentStyle={{ 
-                  backgroundColor: '#0f172a', 
-                  border: '1px solid #334155',
-                  borderRadius: '8px',
-                  color: '#f8fafc'
-                }}
-                formatter={(value: any) => [formatPercent(value as number), title]}
-              />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                {getChartData(metricKey).map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-                <LabelList 
-                  dataKey="value" 
-                  position="top" 
-                  formatter={(val: any) => formatPercent(val as number)}
-                  style={{ fill: '#f8fafc', fontSize: 11, fontWeight: 'bold' }}
-                />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   return (
     <main className="min-h-screen bg-slate-950">
@@ -198,7 +149,7 @@ export default function Proses1Page() {
           </h1>
           <p className="text-lg text-slate-300 max-w-2xl drop-shadow-md">
             Proses 1 - Analisis performa model klasifikasi dengan confusion matrix.
-            Evaluasi akurasi, precision, recall, dan F1-score secara visual.
+            Evaluasi metrik secara komprehensif dalam satu visualisasi terpadu.
           </p>
         </div>
       </div>
@@ -227,11 +178,7 @@ export default function Proses1Page() {
         {/* Loading State - Skeleton */}
         {loading ? (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-[300px] w-full bg-slate-900" />
-              ))}
-            </div>
+            <Skeleton className="h-[450px] w-full bg-slate-900" />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               {Array.from({ length: 6 }).map((_, index) => (
                 <Card key={index} className="bg-slate-900 border-slate-800">
@@ -249,17 +196,84 @@ export default function Proses1Page() {
           </div>
         ) : data ? (
           <>
-            {/* Visual Charts Section - NEW */}
+            {/* Visual Combined Chart - NEW */}
             <div className="mb-12">
               <h2 className="text-3xl font-bold text-white mb-8 text-center flex items-center justify-center gap-3">
-                <span className="text-blue-500">📊</span> Visualisasi Performa Model (Seaborn Style)
+                <span className="text-blue-500">📊</span> Perbandingan Metrik Evaluasi (Seaborn Style)
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {renderMetricChart("Accuracy", "accuracy_count", SEABORN_COLORS.green)}
-                {renderMetricChart("Precision", "precision_count", SEABORN_COLORS.blue)}
-                {renderMetricChart("Recall", "recall_count", SEABORN_COLORS.purple)}
-                {renderMetricChart("F1-Score", "f1_score_count", SEABORN_COLORS.orange)}
-              </div>
+              
+              <Card className="bg-slate-900 border-slate-800">
+                <CardHeader>
+                  <CardTitle className="text-white text-xl">Combined Metrics Comparison</CardTitle>
+                  <CardDescription>Comparison of Accuracy, Precision, Recall, and F1-Score between Legal and Illegal classes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[450px] w-full mt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={getCombinedChartData()}
+                        margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                        <XAxis 
+                          dataKey="metric" 
+                          axisLine={{ stroke: '#475569' }}
+                          tickLine={false}
+                          tick={{ fill: '#94a3b8', fontSize: 13, fontWeight: 'bold' }}
+                        />
+                        <YAxis 
+                          domain={[0, 1]}
+                          axisLine={{ stroke: '#475569' }}
+                          tickLine={false}
+                          tick={{ fill: '#94a3b8', fontSize: 12 }}
+                          tickFormatter={(val) => `${(val * 100).toFixed(0)}%`}
+                        />
+                        <Tooltip 
+                          cursor={{ fill: '#1e293b', opacity: 0.4 }}
+                          contentStyle={{ 
+                            backgroundColor: '#0f172a', 
+                            border: '1px solid #334155',
+                            borderRadius: '8px',
+                            color: '#f8fafc'
+                          }}
+                          formatter={(value: any) => [formatPercent(value as number), 'Value']}
+                        />
+                        <Legend 
+                          verticalAlign="top" 
+                          align="right" 
+                          wrapperStyle={{ paddingBottom: '20px' }}
+                        />
+                        <Bar 
+                          dataKey="Legal" 
+                          fill={SEABORN_COLORS.blue} 
+                          radius={[4, 4, 0, 0]} 
+                          name="Legal Class"
+                        >
+                          <LabelList 
+                            dataKey="Legal" 
+                            position="top" 
+                            formatter={(val: any) => formatPercent(val as number)}
+                            style={{ fill: SEABORN_COLORS.blue, fontSize: 11, fontWeight: 'bold' }}
+                          />
+                        </Bar>
+                        <Bar 
+                          dataKey="Illegal" 
+                          fill={SEABORN_COLORS.red} 
+                          radius={[4, 4, 0, 0]} 
+                          name="Illegal Class"
+                        >
+                          <LabelList 
+                            dataKey="Illegal" 
+                            position="top" 
+                            formatter={(val: any) => formatPercent(val as number)}
+                            style={{ fill: SEABORN_COLORS.red, fontSize: 11, fontWeight: 'bold' }}
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Detailed Explanation Section - DYNAMIC */}
