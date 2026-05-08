@@ -28,7 +28,11 @@ const SEABORN_COLORS = {
   purple: "#8172B3",
   yellow: "#CCB974",
   cyan: "#64B5CD",
+  orange: "#E18727",
 };
+
+// Type for numeric metrics only
+type NumericMetricKey = "accuracy_count" | "precision_count" | "recall_count" | "f1_score_count";
 
 export default function Proses1Page() {
   const [data, setData] = useState<ConfusionMatrixData | null>(null);
@@ -99,7 +103,7 @@ export default function Proses1Page() {
   };
 
   // Prepare chart data for each metric
-  const getChartData = (metricKey: keyof ConfusionMatrixData) => {
+  const getChartData = (metricKey: NumericMetricKey) => {
     return [
       {
         name: "Legal",
@@ -114,7 +118,7 @@ export default function Proses1Page() {
     ];
   };
 
-  const renderMetricChart = (title: string, metricKey: keyof ConfusionMatrixData, color: string) => (
+  const renderMetricChart = (title: string, metricKey: NumericMetricKey, color: string) => (
     <Card className="bg-slate-900 border-slate-800">
       <CardHeader className="pb-2">
         <CardTitle className="text-white text-lg flex items-center gap-2">
@@ -153,7 +157,7 @@ export default function Proses1Page() {
                   borderRadius: '8px',
                   color: '#f8fafc'
                 }}
-                formatter={(value: number) => [formatPercent(value), title]}
+                formatter={(value: any) => [formatPercent(value as number), title]}
               />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                 {getChartData(metricKey).map((entry, index) => (
@@ -162,7 +166,7 @@ export default function Proses1Page() {
                 <LabelList 
                   dataKey="value" 
                   position="top" 
-                  formatter={(val: number) => formatPercent(val)}
+                  formatter={(val: any) => formatPercent(val as number)}
                   style={{ fill: '#f8fafc', fontSize: 11, fontWeight: 'bold' }}
                 />
               </Bar>
@@ -254,7 +258,7 @@ export default function Proses1Page() {
                 {renderMetricChart("Accuracy", "accuracy_count", SEABORN_COLORS.green)}
                 {renderMetricChart("Precision", "precision_count", SEABORN_COLORS.blue)}
                 {renderMetricChart("Recall", "recall_count", SEABORN_COLORS.purple)}
-                {renderMetricChart("F1-Score", "f1_score_count", SEABORN_COLORS.orange || "#ED8936")}
+                {renderMetricChart("F1-Score", "f1_score_count", SEABORN_COLORS.orange)}
               </div>
             </div>
 
