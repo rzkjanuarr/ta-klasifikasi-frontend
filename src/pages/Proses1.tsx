@@ -280,21 +280,6 @@ export default function Proses1Page() {
           </div>
         ) : data ? (
           <>
-            {/* Visual Combined Chart - UNIFIED */}
-            
-
-            {/* Visual Individual Charts - GRANULAR */}
-            <div className="mb-12">
-              <h2 className="text-2xl font-bold text-white mb-6 text-center flex items-center justify-center gap-3">
-                <span className="text-orange-400">📈</span> Analisis Metrik Individual
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {renderMetricChart("Accuracy", "accuracy_count", SEABORN_COLORS.green)}
-                {renderMetricChart("Precision", "precision_count", SEABORN_COLORS.blue)}
-                {renderMetricChart("Recall", "recall_count", SEABORN_COLORS.purple)}
-                {renderMetricChart("F1-Score", "f1_score_count", SEABORN_COLORS.orange)}
-              </div>
-            </div>
 
             {/* Detailed Explanation Section - DYNAMIC */}
             <div className="mb-12">
@@ -679,9 +664,6 @@ export default function Proses1Page() {
             </div>
 
             <div className="mb-12">
-              <h2 className="text-3xl font-bold text-white mb-8 text-center flex items-center justify-center gap-3">
-                <span className="text-blue-500">📊</span> Perbandingan Metrik Terpadu
-              </h2>
               
               <Card className="bg-slate-900 border-slate-800">
                 <CardHeader>
@@ -736,6 +718,15 @@ export default function Proses1Page() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+
+            <div className="mb-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {renderMetricChart("Accuracy", "accuracy_count", SEABORN_COLORS.green)}
+                {renderMetricChart("Precision", "precision_count", SEABORN_COLORS.blue)}
+                {renderMetricChart("Recall", "recall_count", SEABORN_COLORS.purple)}
+                {renderMetricChart("F1-Score", "f1_score_count", SEABORN_COLORS.orange)}
+              </div>
             </div>
 
             {/* Confusion Matrix Grid */}
