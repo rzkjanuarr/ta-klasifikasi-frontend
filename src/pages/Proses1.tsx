@@ -4,29 +4,62 @@ import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  Cell,
+  LabelList
+} from 'recharts';
 import { confusionMatrixService } from "@/services/confusion-matrix.service";
 import { ApiError } from "@/services/api-client";
 import { toast } from "sonner";
 import type { ConfusionMatrixData } from "@/types/api";
 
+// Seaborn "deep" palette colors
+const SEABORN_COLORS = {
+  blue: "#4C72B0",
+  green: "#55A868",
+  red: "#C44E52",
+  purple: "#8172B3",
+  yellow: "#CCB974",
+  cyan: "#64B5CD",
+};
+
 export default function Proses1Page() {
   const [data, setData] = useState<ConfusionMatrixData | null>(null);
+  const [legalData, setLegalData] = useState<ConfusionMatrixData | null>(null);
+  const [illegalData, setIllegalData] = useState<ConfusionMatrixData | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<number>(1); // Default to Legal
 
-  const fetchData = async (isLegal: number) => {
+  const fetchAllData = async () => {
     setLoading(true);
     const startTime = Date.now();
 
     try {
-      const response = await confusionMatrixService.getMatrix(isLegal);
+      // Fetch both for charts
+      const [resLegal, resIllegal] = await Promise.all([
+        confusionMatrixService.getMatrix(1),
+        confusionMatrixService.getMatrix(0)
+      ]);
 
-      if (response.success && response.data) {
-        setData(response.data);
-      } else {
-        toast.error("Gagal memuat data", {
-          description: response.message || "Terjadi kesalahan",
-        });
+      if (resLegal.success && resLegal.data) {
+        setLegalData(resLegal.data);
+        if (filter === 1) setData(resLegal.data);
+      }
+
+      if (resIllegal.success && resIllegal.data) {
+        setIllegalData(resIllegal.data);
+        if (filter === 0) setData(resIllegal.data);
+      }
+
+      if (!resLegal.success || !resIllegal.success) {
+        toast.error("Gagal memuat beberapa data");
       }
     } catch (error) {
       if (error instanceof ApiError) {
@@ -35,7 +68,6 @@ export default function Proses1Page() {
         });
       }
     } finally {
-      // Ensure minimum 500ms loading for skeleton display
       const elapsedTime = Date.now() - startTime;
       const remainingTime = Math.max(0, 500 - elapsedTime);
 
@@ -46,8 +78,16 @@ export default function Proses1Page() {
   };
 
   useEffect(() => {
-    fetchData(filter);
-  }, [filter]);
+    fetchAllData();
+  }, []);
+
+  useEffect(() => {
+    if (filter === 1 && legalData) {
+      setData(legalData);
+    } else if (filter === 0 && illegalData) {
+      setData(illegalData);
+    }
+  }, [filter, legalData, illegalData]);
 
   const handleFilterChange = (isLegal: number) => {
     setFilter(isLegal);
@@ -57,6 +97,81 @@ export default function Proses1Page() {
   const formatPercent = (value: number) => {
     return (value * 100).toFixed(1) + "%";
   };
+
+  // Prepare chart data for each metric
+  const getChartData = (metricKey: keyof ConfusionMatrixData) => {
+    return [
+      {
+        name: "Legal",
+        value: legalData ? (legalData[metricKey] as number) : 0,
+        color: SEABORN_COLORS.blue
+      },
+      {
+        name: "Illegal",
+        value: illegalData ? (illegalData[metricKey] as number) : 0,
+        color: SEABORN_COLORS.red
+      }
+    ];
+  };
+
+  const renderMetricChart = (title: string, metricKey: keyof ConfusionMatrixData, color: string) => (
+    <Card className="bg-slate-900 border-slate-800">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-white text-lg flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></div>
+          {title}
+        </CardTitle>
+        <CardDescription>Comparison across classes</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[250px] w-full mt-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={getChartData(metricKey)}
+              margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+              barSize={60}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+              <XAxis 
+                dataKey="name" 
+                axisLine={{ stroke: '#475569' }}
+                tickLine={false}
+                tick={{ fill: '#94a3b8', fontSize: 12 }}
+              />
+              <YAxis 
+                domain={[0, 1]}
+                axisLine={{ stroke: '#475569' }}
+                tickLine={false}
+                tick={{ fill: '#94a3b8', fontSize: 12 }}
+                tickFormatter={(val) => `${(val * 100).toFixed(0)}%`}
+              />
+              <Tooltip 
+                cursor={{ fill: '#1e293b', opacity: 0.4 }}
+                contentStyle={{ 
+                  backgroundColor: '#0f172a', 
+                  border: '1px solid #334155',
+                  borderRadius: '8px',
+                  color: '#f8fafc'
+                }}
+                formatter={(value: number) => [formatPercent(value), title]}
+              />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                {getChartData(metricKey).map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+                <LabelList 
+                  dataKey="value" 
+                  position="top" 
+                  formatter={(val: number) => formatPercent(val)}
+                  style={{ fill: '#f8fafc', fontSize: 11, fontWeight: 'bold' }}
+                />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <main className="min-h-screen bg-slate-950">
@@ -79,7 +194,7 @@ export default function Proses1Page() {
           </h1>
           <p className="text-lg text-slate-300 max-w-2xl drop-shadow-md">
             Proses 1 - Analisis performa model klasifikasi dengan confusion matrix.
-            Evaluasi akurasi, precision, recall, dan F1-score.
+            Evaluasi akurasi, precision, recall, dan F1-score secara visual.
           </p>
         </div>
       </div>
@@ -91,7 +206,7 @@ export default function Proses1Page() {
             variant={filter === 1 ? "default" : "outline"}
             onClick={() => handleFilterChange(1)}
             size="sm"
-            className={filter === 1 ? "bg-green-600 hover:bg-green-700" : ""}
+            className={filter === 1 ? "bg-blue-600 hover:bg-blue-700" : ""}
           >
             Legal
           </Button>
@@ -107,22 +222,42 @@ export default function Proses1Page() {
 
         {/* Loading State - Skeleton */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <Card key={index} className="bg-slate-900 border-slate-800">
-                <CardHeader>
-                  <Skeleton className="h-6 w-32 mb-2" />
-                  <Skeleton className="h-4 w-full" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-12 w-24 mb-2" />
-                  <Skeleton className="h-4 w-full" />
-                </CardContent>
-              </Card>
-            ))}
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-[300px] w-full bg-slate-900" />
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Card key={index} className="bg-slate-900 border-slate-800">
+                  <CardHeader>
+                    <Skeleton className="h-6 w-32 mb-2" />
+                    <Skeleton className="h-4 w-full" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-12 w-24 mb-2" />
+                    <Skeleton className="h-4 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         ) : data ? (
           <>
+            {/* Visual Charts Section - NEW */}
+            <div className="mb-12">
+              <h2 className="text-3xl font-bold text-white mb-8 text-center flex items-center justify-center gap-3">
+                <span className="text-blue-500">📊</span> Visualisasi Performa Model (Seaborn Style)
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {renderMetricChart("Accuracy", "accuracy_count", SEABORN_COLORS.green)}
+                {renderMetricChart("Precision", "precision_count", SEABORN_COLORS.blue)}
+                {renderMetricChart("Recall", "recall_count", SEABORN_COLORS.purple)}
+                {renderMetricChart("F1-Score", "f1_score_count", SEABORN_COLORS.orange || "#ED8936")}
+              </div>
+            </div>
+
             {/* Detailed Explanation Section - DYNAMIC */}
             <div className="mb-12">
               <h2 className="text-3xl font-bold text-white mb-6 text-center">
