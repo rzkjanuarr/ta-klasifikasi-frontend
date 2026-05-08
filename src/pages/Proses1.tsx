@@ -168,6 +168,8 @@ export default function Proses1Page() {
                   borderRadius: '8px',
                   color: '#f8fafc'
                 }}
+                itemStyle={{ color: '#f8fafc' }}
+                labelStyle={{ color: '#cbd5e1' }}
                 formatter={(value: any, name: any) => [formatPercent(value as number), `${name}`]}
               />
               <Legend wrapperStyle={{ color: "#cbd5e1", fontSize: "12px" }} />
@@ -290,6 +292,8 @@ export default function Proses1Page() {
                             borderRadius: '8px',
                             color: '#f8fafc'
                           }}
+                          itemStyle={{ color: '#f8fafc' }}
+                          labelStyle={{ color: '#cbd5e1' }}
                           formatter={(value: any, name: any) => {
                             const total = data.ts_count || 1;
                             const count = value as number;
