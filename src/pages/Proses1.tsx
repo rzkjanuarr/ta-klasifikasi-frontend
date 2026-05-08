@@ -7,6 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { 
   PieChart,
   Pie,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip, 
   ResponsiveContainer, 
   Legend,
@@ -160,7 +165,21 @@ export default function Proses1Page() {
       <CardContent>
         <div className="h-[200px] w-full mt-4">
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+            <LineChart data={getIndividualChartData(metricKey)} margin={{ top: 10, right: 16, left: 0, bottom: 6 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+              <XAxis
+                dataKey="name"
+                stroke="#94a3b8"
+                tickLine={false}
+                axisLine={{ stroke: "#475569" }}
+              />
+              <YAxis
+                stroke="#94a3b8"
+                tickLine={false}
+                axisLine={{ stroke: "#475569" }}
+                domain={[0, 1]}
+                tickFormatter={(val) => `${(val * 100).toFixed(0)}%`}
+              />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: '#0f172a', 
@@ -172,25 +191,16 @@ export default function Proses1Page() {
                 labelStyle={{ color: '#cbd5e1' }}
                 formatter={(value: any, name: any) => [formatPercent(value as number), `${name}`]}
               />
-              <Legend wrapperStyle={{ color: "#cbd5e1", fontSize: "12px" }} />
-              <Pie
-                data={getIndividualChartData(metricKey)}
+              <Line
+                type="monotone"
                 dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                innerRadius={35}
-                outerRadius={75}
-                startAngle={90}
-                endAngle={-270}
-                labelLine={false}
-                label={renderPieLabel}
-              >
-                {getIndividualChartData(metricKey).map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-            </PieChart>
+                stroke={color}
+                strokeWidth={3}
+                name={title}
+                dot={{ fill: color, r: 5 }}
+                activeDot={{ r: 7 }}
+              />
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </CardContent>
